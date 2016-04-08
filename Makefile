@@ -11,6 +11,7 @@ endef
 $(foreach dir, $(filter-out configure,$(DIRS)),$(eval $(call DIR_template,$(dir))))
 
 iocBoot_DEPEND_DIRS += $(filter %App,$(DIRS))
+FileServerTestApp_DEPEND_DIRS += FileServerApp
 
 include $(TOP)/configure/RULES_TOP
 
