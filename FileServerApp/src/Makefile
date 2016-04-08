@@ -5,20 +5,18 @@ include $(TOP)/configure/CONFIG
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 #=============================
 
-#==================================================
-# build a support library
+USR_INCLUDES += -I"$(TOP)/../../libraries/boost/include"
+USR_CXXFLAGS += /EHa /DNOMINMAX
 
 LIBRARY_IOC += FileServer
+FileServer_SRCS += FileServerDriver.cpp
 
-# xxxRecord.h will be created from xxxRecord.dbd
-#DBDINC += xxxRecord
-# install FileServer.dbd into <top>/dbd
-DBD += FileServer.dbd
-
-# specify all source files to be compiled and added to the library
-#FileServer_SRCS += xxx
-
+FileServer_LIBS += asyn oncrpc utilities zlib pcrecpp pcre
 FileServer_LIBS += $(EPICS_BASE_IOC_LIBS)
+
+# FileServer.dbd will be created and installed
+# see FileServerInclude.dbd
+DBD += FileServer.dbd
 
 #===========================
 
