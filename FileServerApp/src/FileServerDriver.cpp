@@ -74,7 +74,7 @@ void FileServerDriver::readFile()
 	m_lines.clear();
 	m_kv.clear();
 	int param;
-	f.open(m_fileName, std::ios::in);
+	f.open(m_fileName.c_str(), std::ios::in);
 	std::getline(f, line);
 	int i = 0, n = 0;
 	while(f.good())
@@ -193,7 +193,7 @@ void FileServerDriver::updateKey(const std::string& key, const std::string& valu
 void FileServerDriver::updateFile()
 {
     std::fstream f;
-	f.open(m_fileName, std::ios::out);
+	f.open(m_fileName.c_str(), std::ios::out);
 	for(int i=0; i<m_lines.size(); ++i)
 	{
 	    f << m_lines[i] << std::endl;
