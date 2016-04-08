@@ -6,12 +6,12 @@ include $(TOP)/configure/CONFIG
 #=============================
 
 USR_INCLUDES += -I"$(TOP)/../../libraries/boost/include"
-USR_CXXFLAGS += /EHa /DNOMINMAX
+#USR_CXXFLAGS += /EHa /DNOMINMAX
 
 LIBRARY_IOC += FileServer
 FileServer_SRCS += FileServerDriver.cpp
 
-FileServer_LIBS += asyn oncrpc utilities zlib pcrecpp pcre
+FileServer_LIBS += asyn utilities zlib pcrecpp pcre
 FileServer_LIBS += $(EPICS_BASE_IOC_LIBS)
 
 # FileServer.dbd will be created and installed
