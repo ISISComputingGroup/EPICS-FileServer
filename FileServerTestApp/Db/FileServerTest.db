@@ -1,0 +1,40 @@
+record(ao, "$(P)FPAR:SP")
+{
+    field(DTYP, "asynFloat64")
+    field(OUT,  "@asyn(fserv,0,0)FPAR")
+}
+
+record(ai, "$(P)FPAR")
+{
+    field(DTYP, "asynFloat64")
+    field(INP,  "@asyn(fserv,0,0)FPAR")
+    field(SCAN, "I/O Intr")
+    
+}
+
+record(longout, "$(P)IPAR:SP")
+{
+    field(DTYP, "asynInt32")
+    field(OUT,  "@asyn(fserv,0,0)IPAR")
+}
+
+record(longin, "$(P)IPAR")
+{
+    field(DTYP, "asynInt32")
+    field(INP,  "@asyn(fserv,0,0)IPAR")
+    field(SCAN, "I/O Intr")
+}
+
+record(stringout, "$(P)SPAR:SP")
+{
+    field(DTYP, "asynOctetWrite")
+    field(OUT,  "@asyn(fserv,0,0)SPAR")
+}
+
+record(stringin, "$(P)SPAR")
+{
+    field(DTYP, "asynOctetRead")
+    field(INP,  "@asyn(fserv,0,0)SPAR")
+    field(SCAN, "I/O Intr")
+}
+
