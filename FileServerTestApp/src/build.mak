@@ -39,7 +39,7 @@ $(APPNAME)_LIBS += autosave
 $(APPNAME)_LIBS += utilities pcre libjson zlib
 ## Add other libraries here ##
 $(APPNAME)_LIBS += FileServer
-$(APPNAME)_LIBS += asyn oncrpc
+$(APPNAME)_LIBS += asyn
 
 # FileServerTest_registerRecordDeviceDriver.cpp derives from FileServerTest.dbd
 $(APPNAME)_SRCS += $(APPNAME)_registerRecordDeviceDriver.cpp
