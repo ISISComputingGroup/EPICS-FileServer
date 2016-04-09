@@ -36,9 +36,9 @@ $(APPNAME)_LIBS += pvdump $(MYSQLLIB) easySQLite sqlite
 $(APPNAME)_LIBS += caPutLog
 $(APPNAME)_LIBS += icpconfig pugixml
 $(APPNAME)_LIBS += autosave
-$(APPNAME)_LIBS += utilities pcre libjson zlib
+$(APPNAME)_LIBS += utilities libjson zlib
 ## Add other libraries here ##
-$(APPNAME)_LIBS += FileServer
+$(APPNAME)_LIBS += FileServer pcrecpp pcre
 $(APPNAME)_LIBS += asyn
 
 # FileServerTest_registerRecordDeviceDriver.cpp derives from FileServerTest.dbd
