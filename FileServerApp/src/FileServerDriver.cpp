@@ -89,13 +89,13 @@ void FileServerDriver::readFile()
             createParam(key.c_str(), asynParamOctet, &param);
 		    setStringParam(param, value.c_str());
 		    m_kv[key] = KV(i, param, value);
-	        std::cout << "Found key \"" << key << "\" = \"" << value << "\"" << std::endl;	
+	        std::cout << "FileServerDriver: Found key \"" << key << "\" = \"" << value << "\"" << std::endl;	
 			++n;
 		}
 		++i;
 	    std::getline(f, line);
 	}
-	std::cout << "Read " << i << " lines and " << n << " parameters" << std::endl;
+	std::cout << "FileServerDriver: Read " << i << " lines and " << n << " parameters" << std::endl;
 }
 
 asynStatus FileServerDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars, size_t *nActual)
