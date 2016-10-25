@@ -70,7 +70,7 @@ void FileServerDriver::readFile()
     const std::string comment = "//";
     std::fstream f;
 	std::string line, key, value;
-	pcrecpp::RE re("(\\w+)(\\s+)(\\w+)(.*)");
+	pcrecpp::RE re("(\\w+)(\\s+)(\\S+)(.*)");
 	m_lines.clear();
 	m_kv.clear();
 	int param;
