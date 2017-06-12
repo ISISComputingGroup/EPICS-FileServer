@@ -1,8 +1,1 @@
-include "base.dbd"
-include "devSequencer.dbd"
-include "asyn.dbd"
-include "icpconfig.dbd"
-include "asSupport.dbd"
-include "devIocStats.dbd"
-include "caPutLog.dbd"
 registrar("FileServerRegister")
