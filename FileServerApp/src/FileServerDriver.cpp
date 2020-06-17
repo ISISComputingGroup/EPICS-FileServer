@@ -20,6 +20,7 @@
 #include <epicsTimer.h>
 #include <epicsMutex.h>
 #include <epicsEvent.h>
+#include <shareLib.h>
 #include <iocsh.h>
 
 #include <macLib.h>
