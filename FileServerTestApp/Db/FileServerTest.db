@@ -38,3 +38,11 @@ record(stringin, "$(P)SPAR")
     field(SCAN, "I/O Intr")
 }
 
+record(waveform, "$(P)LINES_ARRAY") {
+    field(DTYP, "asynWaveform") 
+    field(INP,  "@asyn(fserv,0,0)LINES_ARRAY")  
+    field(NELM, "1000")          
+    field(FTVL, "STRING")        
+    field(DELIM, "\n")           
+    field(FLNK, "process")       
+}

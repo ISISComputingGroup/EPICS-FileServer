@@ -58,6 +58,8 @@ FileServerDriver::FileServerDriver(const char *portName, const char* fileName, i
     const char *functionName = "FileServerDriver";
     createParam(P_fileNameString, asynParamOctet, &P_fileName);
     createParam(P_fileTypeString, asynParamInt32, &P_fileType);
+	createParam("LINES_ARRAY", asynParamOctet, &P_linesArray); 
+
 
     setStringParam(P_fileName, fileName);
     setIntegerParam(P_fileType, fileType);
@@ -66,6 +68,18 @@ FileServerDriver::FileServerDriver(const char *portName, const char* fileName, i
 
 }
 
+void FileServerDriver::updateLinesArray()
+{
+    std::string concatenatedLines;
+    for (const auto& line : m_lines) {
+        concatenatedLines += line + "\n";
+    }
+
+    setStringParam(P_linesArray, concatenatedLines.c_str());
+    callParamCallbacks();
+}
+
+
 void FileServerDriver::readFile()
 {
     const std::string comment = "//";
@@ -73,11 +87,10 @@ void FileServerDriver::readFile()
 	std::string line, key, value;
 	pcrecpp::RE re("(\\w+)(\\s+)(\\S+)(.*)");
 	m_lines.clear();
-	m_kv.clear();
 	int param;
 	f.open(m_fileName.c_str(), std::ios::in);
 	std::getline(f, line);
-	int i = 0, n = 0;
+	int i = 0;
 	while(f.good())
 	{
 		m_lines.push_back(line);
@@ -85,18 +98,13 @@ void FileServerDriver::readFile()
 		{
 	        ;
 		}
-        else if (re.FullMatch(line.c_str(), &key, (void*)0, &value))
-		{
-            createParam(key.c_str(), asynParamOctet, &param);
-		    setStringParam(param, value.c_str());
-		    m_kv[key] = KV(i, param, value);
-	        std::cout << "FileServerDriver: Found key \"" << key << "\" = \"" << value << "\"" << std::endl;	
-			++n;
-		}
 		++i;
 	    std::getline(f, line);
 	}
-	std::cout << "FileServerDriver: Read " << i << " lines and " << n << " parameters" << std::endl;
+	std::cout << "FileServerDriver: Read " << i << " lines " << std::endl;
+    
+	updateLinesArray(); // Update the PV with the new content of m_lines
+
 }
 
 asynStatus FileServerDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars, size_t *nActual)
@@ -118,7 +126,6 @@ asynStatus FileServerDriver::writeOctet(asynUser *pasynUser, const char *value, 
     }
 	try
 	{
-	    updateKey(paramName, value_s);
 		status = asynPortDriver::writeOctet(pasynUser, value_s.c_str(), value_s.size(), nActual);
         asynPrint(pasynUser, ASYN_TRACEIO_DRIVER, 
               "%s:%s: function=%d, name=%s, value=%s\n", 
@@ -173,23 +180,6 @@ asynStatus FileServerDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *valu
 	return asynSuccess;
 }
 
-
-void FileServerDriver::updateKey(const std::string& key, const std::string& value)
-{
-	pcrecpp::RE re("(\\w+)(\\s+)(\\w+)(.*)");
-    std::map<std::string,KV>::iterator it = m_kv.find(key);
-    if ( it == m_kv.end() )
-	{
-	    errlogSevPrintf(errlogMajor, "Unknown file key \"%s\"", key.c_str());
-	    return;
-	}
-	it->second.value = value;
-	std::string& s = m_lines[it->second.line];
-	std::string newline = key + "\\2" + value + "\\4";
-	re.Replace(newline.c_str(), &s);
-	std::cout << "New line " << it->second.line + 1 << ": " << s << std::endl;
-	updateFile();
-}
 
 void FileServerDriver::updateFile()
 {

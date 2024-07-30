@@ -20,24 +20,19 @@ private:
 
 	int P_fileName; // string
 	int P_fileType; // int
+	int P_linesArray; // Index for the m_lines PV
 	#define FIRST_FILESERV_PARAM P_fileName
 	#define LAST_FILESERV_PARAM P_fileType
+	#define LAST_FILESERV_PARAM P_linesArray 
+
 
 	std::string m_fileName;
 	FileType m_fileType;
-	struct KV
-	{
-	    int line;
-		int param;
-	    std::string value;
-		KV(int l, int p, const std::string& v) : line(l), param(p), value(v) { }
-		KV() : line(-1), param(-1), value("<NONE>") { }
-	};
-	std::map<std::string,KV> m_kv;
+
 	std::vector<std::string> m_lines;
 	
 	void readFile();
-	void updateKey(const std::string& key, const std::string& value);
+	void updateLinesArray();
 	void updateFile();
 
 	
