@@ -1,30 +1,11 @@
-record(waveform, "$(P)LINES_ARRAY") 
-{
-    field(DTYP, "asynOctetRead") 
-    field(INP,  "@asyn(fserv,0,0)LINES_ARRAY") 
-    field(FTVL, "CHAR")
-    field(NELM, "5000")
-    field(SCAN, "I/O Intr")
-}
-
 record(waveform, "$(P)LINES_ARRAY:SP") 
 {
     field(DTYP, "asynOctetWrite") 
     field(INP,  "@asyn(fserv,0,0)LINES_ARRAY") 
     field(FTVL, "CHAR")
     field(NELM, "5000")
-	info(asyn:READBACK, "1")
-}
-
-# not really needed, was out of interest to see how
-# lso record behaved
-record(lso, "$(P)LINES_ARRAY1:SP") 
-{
-    field(DTYP, "asynOctetWrite") 
-    field(OUT,  "@asyn(fserv,0,0)LINES_ARRAY") 
-    field(SIZV, "5000")
-	info(asyn:READBACK, "1")
-}
+    info(asyn:READBACK, "1")
+    }
 
 
 record(stringin, "$(P)FILE_NAME") 

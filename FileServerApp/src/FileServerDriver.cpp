@@ -91,7 +91,7 @@ asynStatus FileServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			std::cout << "Value of P_linesArray after setStringParam: " << buffer << std::endl;
 			// replace newlines with ""
 			std::string buffer_str = buffer;
-			boost::replace_all(buffer_str, "\n", "");
+			// boost::replace_all(buffer_str, "\n", "");
 
 			char fileName[256];
 			getStringParam(P_fileName, sizeof(fileName), fileName);
@@ -143,6 +143,8 @@ void FileServerDriver::updateLinesArray()
 	{
 		concatenatedLines += line + "\n";
 	}
+
+	boost::replace_all(concatenatedLines, "\r", "");
 
 	setStringParam(P_linesArray, concatenatedLines.c_str());
 	m_original_lines_array = concatenatedLines;
