@@ -1,47 +1,57 @@
 #ifndef FILESERVERDRIVER_H
 #define FILESERVERDRIVER_H
- 
+
 #include "asynPortDriver.h"
 
-class FileServerDriver : public asynPortDriver 
+class FileServerDriver : public asynPortDriver
 {
 public:
-    enum FileType { FileTypeTextKVC=1 };
-    FileServerDriver(const char *portName, const char* fileName, int fileType);
-                
-    // These are the methods that we override from asynPortDriver
+	enum FileType
+	{
+		FileTypeTextKVC = 1
+	};
+	FileServerDriver(const char *portName, const char *fileDir, int fileType);
+
+	// These are the methods that we override from asynPortDriver
 	virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t maxChars, size_t *nActual);
-    virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
-	virtual asynStatus readInt32(asynUser *pasynUser, epicsInt32 *value);
-    virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
-    virtual asynStatus readFloat64(asynUser *pasynUser, epicsFloat64 *value);
-	
+	virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
+
 private:
-
-	int P_fileName; // string
-	int P_fileType; // int
-	int P_linesArray; // Index for the m_lines PV
-	#define FIRST_FILESERV_PARAM P_fileName
-	#define LAST_FILESERV_PARAM P_fileType
-	#define LAST_FILESERV_PARAM P_linesArray 
-
+	int P_fileName;
+	int P_fileType;
+	int P_linesArray;
+	int P_saveFile;
+	int P_fileDir;
+	int P_reset;
+	int P_log;
+#define FIRST_FILESERV_PARAM P_fileName
+#define SECOND_FILESERV_PARAM P_fileType
+#define THIRD_FILESERV_PARAM P_linesArray
+#define FOURTH_FILESERV_PARAM P_fileDir
+#define FIFTH_FILESERV_PARAM P_log
+#define SIXTH_FILESERV_PARAM P_reset
+#define LAST_FILESERV_PARAM P_saveFile
 
 	std::string m_fileName;
 	FileType m_fileType;
+	std::string m_fileDir;
 
-	std::vector<std::string> m_lines;
-	
+	std::vector<std::string> m_linesArray;
+	std::string m_original_lines_array;
+
 	void readFile();
 	void updateLinesArray();
-	void updateFile();
-
-	
+	void logMessage(std::string message);
 };
 
 #define NUM_FILESERV_PARAMS (&LAST_FILESERV_PARAM - &FIRST_FILESERV_PARAM + 1)
 
-// use _ in name to avoid clash with k,v from file
-#define P_fileNameString	"_FILENAME_"
-#define P_fileTypeString	"_FILETYPE_"
+#define P_fileNameString "FILE_NAME"
+#define P_fileTypeString "FILETYPE"
+#define P_linesArrayString "LINES_ARRAY"
+#define P_saveFileString "SAVE_FILE"
+#define P_fileDirString "FILE_DIR"
+#define P_logString "LOG"
+#define P_resetString "RESET"
 
 #endif /* FILESERVERDRIVER_H */

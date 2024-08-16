@@ -1,48 +1,74 @@
-record(ao, "$(P)FPAR:SP")
+record(waveform, "$(P)LINES_ARRAY") 
 {
-    field(DTYP, "asynFloat64")
-    field(OUT,  "@asyn(fserv,0,0)FPAR")
-}
-
-record(ai, "$(P)FPAR")
-{
-    field(DTYP, "asynFloat64")
-    field(INP,  "@asyn(fserv,0,0)FPAR")
-    field(SCAN, "I/O Intr")
-    
-}
-
-record(longout, "$(P)IPAR:SP")
-{
-    field(DTYP, "asynInt32")
-    field(OUT,  "@asyn(fserv,0,0)IPAR")
-}
-
-record(longin, "$(P)IPAR")
-{
-    field(DTYP, "asynInt32")
-    field(INP,  "@asyn(fserv,0,0)IPAR")
+    field(DTYP, "asynOctetRead") 
+    field(INP,  "@asyn(fserv,0,0)LINES_ARRAY") 
+    field(FTVL, "CHAR")
+    field(NELM, "5000")
     field(SCAN, "I/O Intr")
 }
 
-record(stringout, "$(P)SPAR:SP")
+record(waveform, "$(P)LINES_ARRAY:SP") 
 {
-    field(DTYP, "asynOctetWrite")
-    field(OUT,  "@asyn(fserv,0,0)SPAR")
+    field(DTYP, "asynOctetWrite") 
+    field(INP,  "@asyn(fserv,0,0)LINES_ARRAY") 
+    field(FTVL, "CHAR")
+    field(NELM, "5000")
 }
 
-record(stringin, "$(P)SPAR")
+
+record(stringin, "$(P)FILE_NAME") 
 {
-    field(DTYP, "asynOctetRead")
-    field(INP,  "@asyn(fserv,0,0)SPAR")
+    field(DTYP, "asynOctetRead") 
+    field(INP,  "@asyn(fserv,0,0)FILE_NAME") 
     field(SCAN, "I/O Intr")
 }
 
-record(waveform, "$(P)LINES_ARRAY") {
-    field(DTYP, "asynWaveform") 
-    field(INP,  "@asyn(fserv,0,0)LINES_ARRAY")  
-    field(NELM, "1000")          
-    field(FTVL, "STRING")        
-    field(DELIM, "\n")           
-    field(FLNK, "process")       
+record(stringout, "$(P)FILE_NAME:SP")
+{
+    field(DTYP, "asynOctetWrite") 
+    field(OUT,  "@asyn(fserv,0,0)FILE_NAME") 
+    field(SCAN, "I/O Intr")
+    info(autosaveFields, "VAL")
+    field(PINI, "YES")
+}
+
+record(bo, "$(P)SAVE_FILE")
+{
+    field(DESC, "Trigger save file")
+    field(DTYP, "asynInt32")                   
+    field(OUT,  "@asyn(fserv,0,0)SAVE_FILE")   
+    field(VAL, "0")                           
+    field(RVAL, "0")                          
+    # field(HIGH, "1.0")                        
+    field(ZNAM, "Idle")                    
+    field(ONAM, "Saving file")   
+    field(ASG, "MANAGER")  
+}
+
+record(stringin, "$(P)FILE_DIR") 
+{
+    field(DTYP, "asynOctetRead") 
+    field(INP,  "@asyn(fserv,0,0)FILE_DIR") 
+    field(SCAN, "I/O Intr")
+}
+
+record(waveform, "$(P)LOG") 
+{
+    field(DTYP, "asynOctetRead") 
+    field(FTVL, "CHAR")
+    field(NELM, "5000")
+    field(INP,  "@asyn(fserv,0,0)LOG") 
+    field(SCAN, "I/O Intr")
+}
+
+record(bo, "$(P)RESET")
+{
+    field(DESC, "Reset lines_arrary pvs to orginal values")
+    field(DTYP, "asynInt32")                   
+    field(OUT,  "@asyn(fserv,0,0)RESET")   
+    field(VAL, "0")                           
+    field(RVAL, "0")                          
+    # field(HIGH, "1.0")                        
+    field(ZNAM, "Idle")                    
+    field(ONAM, "Resetting")   
 }
