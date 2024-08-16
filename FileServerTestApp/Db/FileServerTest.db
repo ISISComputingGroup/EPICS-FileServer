@@ -63,3 +63,25 @@ record(bo, "$(P)RESET")
     field(ZNAM, "Idle")                    
     field(ONAM, "Resetting")   
 }
+
+record(bi, "$(P)NEW_FILE_WARNING"){
+    field(DTYP, "asynInt32")                   
+    field(INP,  "@asyn(fserv,0,0)NEW_FILE_WARNING")   
+    field(VAL, "0")                           
+    field(RVAL, "0")                          
+    # field(HIGH, "1.0")                        
+    field(ZNAM, "No")                    
+    field(ONAM, "Yes")   
+    field(SCAN, "I/O Intr")
+}
+
+record(bi, "$(P)UNSAVED_CHANGES"){
+    field(DTYP, "asynInt32")                   
+    field(INP,  "@asyn(fserv,0,0)UNSAVED_CHANGES")   
+    field(VAL, "0")                           
+    field(RVAL, "0")                          
+    # field(HIGH, "1.0")                        
+    field(ZNAM, "No")                    
+    field(ONAM, "Yes")   
+    field(SCAN, "I/O Intr")
+}

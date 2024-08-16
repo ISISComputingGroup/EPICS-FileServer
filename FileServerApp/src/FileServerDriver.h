@@ -24,12 +24,16 @@ private:
 	int P_fileDir;
 	int P_reset;
 	int P_log;
+	int P_newFileWarning;
+	int P_unsavedChanges;
 #define FIRST_FILESERV_PARAM P_fileName
 #define SECOND_FILESERV_PARAM P_fileType
 #define THIRD_FILESERV_PARAM P_linesArray
 #define FOURTH_FILESERV_PARAM P_fileDir
 #define FIFTH_FILESERV_PARAM P_log
 #define SIXTH_FILESERV_PARAM P_reset
+#define SEVENTH_FILESERV_PARAM P_newFileWarning
+#define EIGHTH_FILESERV_PARAM P_unsavedChanges
 #define LAST_FILESERV_PARAM P_saveFile
 
 	std::string m_fileName;
@@ -53,5 +57,7 @@ private:
 #define P_fileDirString "FILE_DIR"
 #define P_logString "LOG"
 #define P_resetString "RESET"
+#define P_newFileWarningString "NEW_FILE_WARNING"
+#define P_unsavedChangesString "UNSAVED_CHANGES"
 
 #endif /* FILESERVERDRIVER_H */

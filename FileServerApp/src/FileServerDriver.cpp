@@ -62,6 +62,8 @@ FileServerDriver::FileServerDriver(const char *portName, const char *fileDir, in
 	createParam(P_resetString, asynParamInt32, &P_reset);
 	createParam(P_fileDirString, asynParamOctet, &P_fileDir);
 	createParam(P_logString, asynParamOctet, &P_log);
+	createParam(P_newFileWarningString, asynParamInt32, &P_newFileWarning);
+	createParam(P_unsavedChangesString, asynParamInt32, &P_unsavedChanges);
 
 	setIntegerParam(P_fileType, fileType);
 	setStringParam(P_fileDir, fileDir);
@@ -69,6 +71,8 @@ FileServerDriver::FileServerDriver(const char *portName, const char *fileDir, in
 	setIntegerParam(P_saveFile, defaultSaveFile);
 	const int defaultReset = 0;
 	setIntegerParam(P_reset, defaultReset);
+	const int defaultNewFileWarning = 0;
+	setIntegerParam(P_newFileWarning, defaultNewFileWarning);
 	logMessage("Editor initialized");
 	callParamCallbacks();
 }
@@ -93,7 +97,7 @@ asynStatus FileServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			std::string buffer_str = buffer;
 			// boost::replace_all(buffer_str, "\n", "");
 
-			char fileName[256];
+			char fileName[512];
 			getStringParam(P_fileName, sizeof(fileName), fileName);
 			// join the file name with the file directory
 			std::string m_fullFileName = m_fileDir + fileName;
@@ -106,6 +110,8 @@ asynStatus FileServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 				std::cout << "Contents written to file successfully." << std::endl;
 				logMessage("File saved successfully");
 				setIntegerParam(P_saveFile, 0);
+				setIntegerParam(P_newFileWarning, 0);
+				setIntegerParam(P_unsavedChanges, 0);
 			}
 			else
 			{
@@ -126,6 +132,7 @@ asynStatus FileServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setStringParam(P_linesArray, m_original_lines_array.c_str());
 			logMessage("Reset successful.");
 			setIntegerParam(P_reset, 0);
+			setIntegerParam(P_unsavedChanges, 0);
 			callParamCallbacks();
 		}
 		return asynSuccess;
@@ -139,9 +146,18 @@ asynStatus FileServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 void FileServerDriver::updateLinesArray()
 {
 	std::string concatenatedLines;
+	int i = 0;
 	for (const auto &line : m_linesArray)
-	{
-		concatenatedLines += line + "\n";
+	{ 
+		if (i == m_linesArray.size())
+		{
+			concatenatedLines += line;
+		}
+		else
+		{
+			concatenatedLines += line + "\n";
+		}
+		i++;
 	}
 
 	boost::replace_all(concatenatedLines, "\r", "");
@@ -187,11 +203,23 @@ void FileServerDriver::readFile()
 	try
 	{
 		f.open(m_fullFileName.c_str(), std::ios::in);
-		if (!f.is_open())
-		{
-			logMessage("Unable to open file");
-			throw std::runtime_error("Unable to open file: " + m_fullFileName);
-		}
+        if (!f.is_open())
+        {
+            if (errno == ENOENT) // File not found
+            {
+                logMessage("File not found");
+				std::cout << "File not found" << std::endl;
+                setIntegerParam(P_newFileWarning, 1);
+				setStringParam(P_linesArray, "");
+				m_original_lines_array = "";
+            }
+            else // Other errors, e.g., permission denied
+            {
+                logMessage("Unable to open file: " + std::string(strerror(errno)));
+            }
+
+            throw std::runtime_error("Unable to open file: " + m_fullFileName);
+        }
 		int i = 0;
 		while (f.good())
 		{
@@ -200,13 +228,14 @@ void FileServerDriver::readFile()
 			i++;
 		}
 		std::cout << "FileServerDriver: Read " << i << " lines " << std::endl;
+		updateLinesArray(); // Update the PV with the new content of m_linesArray
+		setIntegerParam(P_newFileWarning, 0);
 	}
 	catch (const std::exception &e)
 	{
 		std::cerr << "Exception caught: " << e.what() << std::endl;
 	}
 
-	updateLinesArray(); // Update the PV with the new content of m_linesArray
 	callParamCallbacks();
 }
 
@@ -221,9 +250,17 @@ asynStatus FileServerDriver::writeOctet(asynUser *pasynUser, const char *value, 
 	std::cout << paramName << std::endl;
 	if (paramNameStr == P_linesArrayString)
 	{
-
+		
 		std::cout << "Calling writeOctet" << std::endl;
 		setStringParam(P_linesArray, value);
+		if (m_original_lines_array != value)
+		{
+			setIntegerParam(P_unsavedChanges, 1);
+		}
+		else
+		{
+			setIntegerParam(P_unsavedChanges, 0);
+		}
 	}
 	else if (paramNameStr == P_fileNameString)
 	{
