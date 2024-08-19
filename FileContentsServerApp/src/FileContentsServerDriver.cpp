@@ -36,223 +36,292 @@
 
 #include <epicsExport.h>
 
-static const char *driverName="FileContentsServerDriver";
+static const char *driverName = "FileContentsServerDriver";
 
-
-/// Constructor for the isisdaeDriver class.
-/// Calls constructor for the asynPortDriver base class.
-/// \param[in] dcomint DCOM interface pointer created by lvDCOMConfigure()
-/// \param[in] portName @copydoc initArg0
-FileContentsServerDriver::FileContentsServerDriver(const char *portName, const char* fileName, int fileType) 
-   : asynPortDriver(portName, 
-                    0, /* maxAddr */ 
-                    NUM_FILESERV_PARAMS + 100,
-                    asynInt32Mask | asynInt32ArrayMask | asynFloat64Mask | asynFloat64ArrayMask | asynOctetMask | asynDrvUserMask, /* Interface mask */
-                    asynInt32Mask | asynInt32ArrayMask | asynFloat64Mask | asynFloat64ArrayMask | asynOctetMask,  /* Interrupt mask */
-                    ASYN_CANBLOCK, /* asynFlags.  This driver can block but it is not multi-device */
-                    1, /* Autoconnect */
-                    0, /* Default priority */
-                    0),	/* Default stack size*/
-					m_fileName(fileName), m_fileType(static_cast<FileType>(fileType))
+FileContentsServerDriver::FileContentsServerDriver(const char *portName, const char *fileDir)
+	: asynPortDriver(portName,
+					 0, /* maxAddr */
+					 NUM_FILESERV_PARAMS + 100,
+					 asynInt32Mask | asynInt32ArrayMask | asynFloat64Mask | asynFloat64ArrayMask | asynOctetMask | asynDrvUserMask, /* Interface mask */
+					 asynInt32Mask | asynInt32ArrayMask | asynFloat64Mask | asynFloat64ArrayMask | asynOctetMask,					/* Interrupt mask */
+					 ASYN_CANBLOCK,																									/* asynFlags.  This driver can block but it is not multi-device */
+					 1,																												/* Autoconnect */
+					 0,																												/* Default priority */
+					 0),																											/* Default stack size*/
+	  m_fileDir(fileDir))
 {
-    const char *functionName = "FileContentsServerDriver";
-    createParam(P_fileNameString, asynParamOctet, &P_fileName);
-    createParam(P_fileTypeString, asynParamInt32, &P_fileType);
+	const char *functionName = "FileContentsServerDriver";
+	createParam(P_fileNameString, asynParamOctet, &P_fileName);
+	createParam(P_linesArrayString, asynParamOctet, &P_linesArray);
+	createParam(P_saveFileString, asynParamInt32, &P_saveFile);
+	createParam(P_resetString, asynParamInt32, &P_reset);
+	createParam(P_fileDirString, asynParamOctet, &P_fileDir);
+	createParam(P_logString, asynParamOctet, &P_log);
+	createParam(P_newFileWarningString, asynParamInt32, &P_newFileWarning);
+	createParam(P_unsavedChangesString, asynParamInt32, &P_unsavedChanges);
 
-    setStringParam(P_fileName, fileName);
-    setIntegerParam(P_fileType, fileType);
-	
-    readFile();	
+	setStringParam(P_fileDir, fileDir);
+	const int defaultSaveFile = 0;
+	setIntegerParam(P_saveFile, defaultSaveFile);
+	const int defaultReset = 0;
+	setIntegerParam(P_reset, defaultReset);
+	const int defaultNewFileWarning = 0;
+	setIntegerParam(P_newFileWarning, defaultNewFileWarning);
+	logMessage("Editor initialized");
+	callParamCallbacks();
+}
 
+// Override the method to handle writes to parameters
+asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
+{
+	if (pasynUser->reason == P_saveFile)
+	{
+		if (value == 1)
+		{
+			// int param = pasynUser->reason;
+			std::cout << "Triggering save" << std::endl;
+			std::cout << "Value received by asyn: " << value << std::endl;
+
+			char buffer[5000]; // Assuming the response will fit within 256 characters
+
+			// Get the value of the parameter we just set
+			getStringParam(P_linesArray, sizeof(buffer), buffer);
+			std::cout << "Value of P_linesArray after setStringParam: " << buffer << std::endl;
+			// replace newlines with ""
+			std::string buffer_str = buffer;
+			// boost::replace_all(buffer_str, "\n", "");
+
+			char fileName[512];
+			getStringParam(P_fileName, sizeof(fileName), fileName);
+			// join the file name with the file directory
+			std::string m_fullFileName = m_fileDir + fileName;
+			// Write the contents of buffer to a file
+			std::ofstream outfile(m_fullFileName, std::ios::out | std::ios::trunc); // Open in  write mode
+			if (outfile.is_open())
+			{
+				outfile << buffer_str << std::endl;
+				outfile.close();
+				std::cout << "Contents written to file successfully." << std::endl;
+				logMessage("File saved successfully");
+				setIntegerParam(P_saveFile, 0);
+				setIntegerParam(P_newFileWarning, 0);
+				setIntegerParam(P_unsavedChanges, 0);
+			}
+			else
+			{
+				std::cerr << "Failed to open file for writing." << std::endl;
+				logMessage("Failed to open file for writing");
+				return asynError;
+			}
+
+			callParamCallbacks();
+		}
+		return asynSuccess;
+	}
+	else if (pasynUser->reason == P_reset)
+	{
+		if (value == 1)
+		{
+			std::cout << "Resetting" << std::endl;
+			setStringParam(P_linesArray, m_original_lines_array.c_str());
+			logMessage("Reset successful.");
+			setIntegerParam(P_reset, 0);
+			setIntegerParam(P_unsavedChanges, 0);
+			callParamCallbacks();
+		}
+		return asynSuccess;
+	}
+	else
+	{
+		return asynPortDriver::writeInt32(pasynUser, value);
+	}
+}
+
+void FileContentsServerDriver::updateLinesArray()
+{
+	std::string concatenatedLines;
+	int i = 0;
+	for (const auto &line : m_linesArray)
+	{
+		if (i == m_linesArray.size())
+		{
+			concatenatedLines += line;
+		}
+		else
+		{
+			concatenatedLines += line + "\n";
+		}
+		i++;
+	}
+
+	boost::replace_all(concatenatedLines, "\r", "");
+
+	setStringParam(P_linesArray, concatenatedLines.c_str());
+	m_original_lines_array = concatenatedLines;
+
+	logMessage("File read successfully");
+
+	callParamCallbacks();
+}
+
+void FileContentsServerDriver::logMessage(std::string message)
+{
+	// add the time to the front of the log message
+	// current time
+	// Get the current time
+	time_t now = time(0);
+	tm *ltm = localtime(&now);
+
+	// Format the time into a string (e.g., "2024-08-15 12:34:56")
+	char time_str[20];
+	strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", ltm);
+
+	// Create the log message
+	std::string log_message = std::string(time_str) + ": " + message;
+
+	setStringParam(P_log, log_message.c_str());
+	callParamCallbacks();
 }
 
 void FileContentsServerDriver::readFile()
 {
-    const std::string comment = "//";
-    std::fstream f;
+	std::cout << "Calling readFile" << std::endl;
+	std::fstream f;
 	std::string line, key, value;
-	pcrecpp::RE re("(\\w+)(\\s+)(\\S+)(.*)");
-	m_lines.clear();
-	m_kv.clear();
+	m_linesArray.clear();
 	int param;
-	f.open(m_fileName.c_str(), std::ios::in);
-	std::getline(f, line);
-	int i = 0, n = 0;
-	while(f.good())
+	char fileName[256];
+	getStringParam(P_fileName, sizeof(fileName), fileName);
+	std::string m_fullFileName = m_fileDir + fileName;
+	std::cout << "FileContentsServerDriver: Reading file " << m_fullFileName << std::endl;
+	try
 	{
-		m_lines.push_back(line);
-		if (line.substr(0,comment.size()) == comment)
+		f.open(m_fullFileName.c_str(), std::ios::in);
+		if (!f.is_open())
 		{
-	        ;
+			if (errno == ENOENT) // File not found
+			{
+				logMessage("File not found");
+				std::cout << "File not found" << std::endl;
+				setIntegerParam(P_newFileWarning, 1);
+				setStringParam(P_linesArray, "");
+				m_original_lines_array = "";
+			}
+			else // Other errors, e.g., permission denied
+			{
+				logMessage("Unable to open file: " + std::string(strerror(errno)));
+			}
+
+			throw std::runtime_error("Unable to open file: " + m_fullFileName);
 		}
-        else if (re.FullMatch(line.c_str(), &key, (void*)0, &value))
+		int i = 0;
+		while (f.good())
 		{
-            createParam(key.c_str(), asynParamOctet, &param);
-		    setStringParam(param, value.c_str());
-		    m_kv[key] = KV(i, param, value);
-	        std::cout << "FileContentsServerDriver: Found key \"" << key << "\" = \"" << value << "\"" << std::endl;	
-			++n;
+			std::getline(f, line);
+			m_linesArray.push_back(line);
+			i++;
 		}
-		++i;
-	    std::getline(f, line);
+		std::cout << "FileContentsServerDriver: Read " << i << " lines " << std::endl;
+		updateLinesArray(); // Update the PV with the new content of m_linesArray
+		setIntegerParam(P_newFileWarning, 0);
 	}
-	std::cout << "FileContentsServerDriver: Read " << i << " lines and " << n << " parameters" << std::endl;
+	catch (const std::exception &e)
+	{
+		std::cerr << "Exception caught: " << e.what() << std::endl;
+	}
+
+	callParamCallbacks();
 }
 
 asynStatus FileContentsServerDriver::writeOctet(asynUser *pasynUser, const char *value, size_t maxChars, size_t *nActual)
 {
-    int function = pasynUser->reason;
-    asynStatus status = asynSuccess;
-    const char *paramName = NULL;
+	int function = pasynUser->reason; // Function to call
+	const char *functionName = "writeOctet";
+	asynStatus status = asynSuccess; // Return status
+	const char *paramName = NULL;
 	getParamName(function, &paramName);
-    const char* functionName = "writeOctet";
-	std::string value_s;
-    // we might get an embedded NULL from channel access char waveform records
-    if ( (maxChars > 0) && (value[maxChars-1] == '\0') )
-    {
-        value_s.assign(value, maxChars-1);
-    }
-    else
-    {
-        value_s.assign(value, maxChars);
-    }
-	try
+	std::string paramNameStr = paramName;
+	std::cout << paramName << std::endl;
+	if (paramNameStr == P_linesArrayString)
 	{
-	    updateKey(paramName, value_s);
-		status = asynPortDriver::writeOctet(pasynUser, value_s.c_str(), value_s.size(), nActual);
-        asynPrint(pasynUser, ASYN_TRACEIO_DRIVER, 
-              "%s:%s: function=%d, name=%s, value=%s\n", 
-              driverName, functionName, function, paramName, value_s.c_str());
-        if (status == asynSuccess)
-        {
-		    *nActual = maxChars;   // to keep result happy in case we skipped an embedded trailing NULL
-        }
-		return status;
-	}
-	catch(const std::exception& ex)
-	{
-        epicsSnprintf(pasynUser->errorMessage, pasynUser->errorMessageSize, 
-                  "%s:%s: status=%d, function=%d, name=%s, value=%s, error=%s", 
-                  driverName, functionName, status, function, paramName, value_s.c_str(), ex.what());
-		*nActual = 0;
-		return asynError;
-	}
-}
 
-asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
-{
-    char value_s[32];
-    size_t nActual = 0;
-	sprintf(value_s, "%d", static_cast<int>(value));
-    return writeOctet(pasynUser, value_s, strlen(value_s), &nActual);
-}
-
-asynStatus FileContentsServerDriver::readInt32(asynUser *pasynUser, epicsInt32 *value)
-{
-    char value_s[32];
-    int param = pasynUser->reason;
-    getStringParam(param, sizeof(value_s), value_s); 
-	*value = atol(value_s);
-	return asynSuccess;
-}
-
-asynStatus FileContentsServerDriver::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
-{
-    char value_s[32];
-    size_t nActual = 0;
-	sprintf(value_s, "%g", static_cast<double>(value));
-    return writeOctet(pasynUser, value_s, strlen(value_s), &nActual);
-}
-
-asynStatus FileContentsServerDriver::readFloat64(asynUser *pasynUser, epicsFloat64 *value)
-{
-    char value_s[32];
-    int param = pasynUser->reason;
-    getStringParam(param, sizeof(value_s), value_s); 
-	*value = atof(value_s);
-	return asynSuccess;
-}
-
-
-void FileContentsServerDriver::updateKey(const std::string& key, const std::string& value)
-{
-	pcrecpp::RE re("(\\w+)(\\s+)(\\w+)(.*)");
-    std::map<std::string,KV>::iterator it = m_kv.find(key);
-    if ( it == m_kv.end() )
-	{
-	    errlogSevPrintf(errlogMajor, "Unknown file key \"%s\"", key.c_str());
-	    return;
-	}
-	it->second.value = value;
-	std::string& s = m_lines[it->second.line];
-	std::string newline = key + "\\2" + value + "\\4";
-	re.Replace(newline.c_str(), &s);
-	std::cout << "New line " << it->second.line + 1 << ": " << s << std::endl;
-	updateFile();
-}
-
-void FileContentsServerDriver::updateFile()
-{
-    std::fstream f;
-	f.open(m_fileName.c_str(), std::ios::out);
-	for(int i=0; i<m_lines.size(); ++i)
-	{
-	    f << m_lines[i] << std::endl;
-	}
-	f.close();
-}
-  
-		
-extern "C" {
-
-/// \param[in] portName @copydoc initArg0
-/// \param[in] fileName @copydoc initArg1
-/// \param[in] fileType @copydoc initArg2
-int FileContentsServerConfigure(const char *portName, const char* fileName, int fileType)
-{
-	try
-	{
-		FileContentsServerDriver* driver = new FileContentsServerDriver(portName, fileName, fileType);
-		if (driver == NULL)
+		std::cout << "Calling writeOctet" << std::endl;
+		setStringParam(P_linesArray, value);
+		if (m_original_lines_array != value)
 		{
-			errlogSevPrintf(errlogMajor, "FileContentsServerConfigure failed (NULL)\n");
-			return(asynError);
+			setIntegerParam(P_unsavedChanges, 1);
 		}
 		else
 		{
-			return(asynSuccess);
+			setIntegerParam(P_unsavedChanges, 0);
 		}
 	}
-	catch(const std::exception& ex)
+	else if (paramNameStr == P_fileNameString)
 	{
-		errlogSevPrintf(errlogMajor, "FileContentsServerConfigure failed: %s\n", ex.what());
-		return(asynError);
+		std::cout << paramName << std::endl;
+		std::cout << "Setting file name" << std::endl;
+		setStringParam(P_fileName, value);
+		readFile();
 	}
+	else
+	{
+		std::cout << "Unknown parameter" << std::endl;
+	}
+
+	// Set nActual to the length of the string that was written
+	*nActual = strlen(value);
+
+	// Update the parameter
+	callParamCallbacks();
+	return status;
 }
 
-// EPICS iocsh shell commands 
-
-static const iocshArg initArg0 = { "portName", iocshArgString};			///< The name of the asyn driver port we will create
-static const iocshArg initArg1 = { "fileName", iocshArgString};			///< file name
-static const iocshArg initArg2 = { "fileType", iocshArgInt};			///< file type enum
-
-static const iocshArg * const initArgs[] = { &initArg0,
-                                             &initArg1,
-											 &initArg2
-};
-
-static const iocshFuncDef initFuncDef = {"FileContentsServerConfigure", sizeof(initArgs) / sizeof(iocshArg*), initArgs};
-
-static void initCallFunc(const iocshArgBuf *args)
+extern "C"
 {
-    FileContentsServerConfigure(args[0].sval, args[1].sval, args[2].ival);
-}
 
-static void FileContentsServerRegister(void)
-{
-    iocshRegister(&initFuncDef, initCallFunc);
-}
+	/// \param[in] portName @copydoc initArg0
+	/// \param[in] fileDir @copydoc initArg1
+	int FileContentsServerConfigure(const char *portName, const char *fileDir)
+	{
+		try
+		{
+			FileContentsServerDriver *driver = new FileContentsServerDriver(portName, fileDir);
+			if (driver == NULL)
+			{
+				errlogSevPrintf(errlogMajor, "FileContentsServerConfigure failed (NULL)\n");
+				return (asynError);
+			}
+			else
+			{
+				return (asynSuccess);
+			}
+		}
+		catch (const std::exception &ex)
+		{
+			errlogSevPrintf(errlogMajor, "FileContentsServerConfigure failed: %s\n", ex.what());
+			return (asynError);
+		}
+	}
 
-epicsExportRegistrar(FileContentsServerRegister);
+	// EPICS iocsh shell commands
 
+	static const iocshArg initArg0 = {"portName", iocshArgString}; ///< The name of the asyn driver port we will create
+	static const iocshArg initArg1 = {"fileDir", iocshArgString};  ///< file name
+
+	static const iocshArg *const initArgs[] = {&initArg0,
+											   &initArg1};
+
+	static const iocshFuncDef initFuncDef = {"FileContentsServerConfigure", sizeof(initArgs) / sizeof(iocshArg *), initArgs};
+
+	static void initCallFunc(const iocshArgBuf *args)
+	{
+		FileContentsServerConfigure(args[0].sval, args[1].sval);
+	}
+
+	static void FileContentsServerRegister(void)
+	{
+		iocshRegister(&initFuncDef, initCallFunc);
+	}
+
+	epicsExportRegistrar(FileContentsServerRegister);
 }

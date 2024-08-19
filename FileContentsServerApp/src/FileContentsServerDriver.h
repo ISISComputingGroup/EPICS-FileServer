@@ -1,52 +1,56 @@
 #ifndef FILECONTENTSSERVERDRIVER_H
 #define FILECONTENTSSERVERDRIVER_H
- 
+
 #include "asynPortDriver.h"
 
-class FileContentsServerDriver : public asynPortDriver 
+class FileContentsServerDriver : public asynPortDriver
 {
 public:
-    enum FileType { FileTypeTextKVC=1 };
-    FileContentsServerDriver(const char *portName, const char* fileName, int fileType);
-                
-    // These are the methods that we override from asynPortDriver
-	virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t maxChars, size_t *nActual);
-    virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
-	virtual asynStatus readInt32(asynUser *pasynUser, epicsInt32 *value);
-    virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
-    virtual asynStatus readFloat64(asynUser *pasynUser, epicsFloat64 *value);
-	
-private:
+	FileContentsServerDriver(const char *portName, const char *fileDir, int fileType);
 
-	int P_fileName; // string
-	int P_fileType; // int
-	#define FIRST_FILESERV_PARAM P_fileName
-	#define LAST_FILESERV_PARAM P_fileType
+	// These are the methods that we override from asynPortDriver
+	virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t maxChars, size_t *nActual);
+	virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
+
+private:
+	int P_fileName;
+	int P_linesArray;
+	int P_saveFile;
+	int P_fileDir;
+	int P_reset;
+	int P_log;
+	int P_newFileWarning;
+	int P_unsavedChanges;
+#define FIRST_FILESERV_PARAM P_fileName
+#define SECOND_FILESERV_PARAM P_fileType
+#define THIRD_FILESERV_PARAM P_linesArray
+#define FOURTH_FILESERV_PARAM P_fileDir
+#define FIFTH_FILESERV_PARAM P_log
+#define SIXTH_FILESERV_PARAM P_reset
+#define SEVENTH_FILESERV_PARAM P_newFileWarning
+#define EIGHTH_FILESERV_PARAM P_unsavedChanges
+#define LAST_FILESERV_PARAM P_saveFile
 
 	std::string m_fileName;
-	FileType m_fileType;
-	struct KV
-	{
-	    int line;
-		int param;
-	    std::string value;
-		KV(int l, int p, const std::string& v) : line(l), param(p), value(v) { }
-		KV() : line(-1), param(-1), value("<NONE>") { }
-	};
-	std::map<std::string,KV> m_kv;
-	std::vector<std::string> m_lines;
-	
-	void readFile();
-	void updateKey(const std::string& key, const std::string& value);
-	void updateFile();
+	std::string m_fileDir;
 
-	
+	std::vector<std::string> m_linesArray;
+	std::string m_original_lines_array;
+
+	void readFile();
+	void updateLinesArray();
+	void logMessage(std::string message);
 };
 
 #define NUM_FILESERV_PARAMS (&LAST_FILESERV_PARAM - &FIRST_FILESERV_PARAM + 1)
 
-// use _ in name to avoid clash with k,v from file
-#define P_fileNameString	"_FILENAME_"
-#define P_fileTypeString	"_FILETYPE_"
+#define P_fileNameString "FILE_NAME"
+#define P_linesArrayString "LINES_ARRAY"
+#define P_saveFileString "SAVE_FILE"
+#define P_fileDirString "FILE_DIR"
+#define P_logString "LOG"
+#define P_resetString "RESET"
+#define P_newFileWarningString "NEW_FILE_WARNING"
+#define P_unsavedChangesString "UNSAVED_CHANGES"
 
 #endif /* FILECONTENTSSERVERDRIVER_H */
