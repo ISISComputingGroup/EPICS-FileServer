@@ -48,7 +48,7 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 					 1,																												/* Autoconnect */
 					 0,																												/* Default priority */
 					 0),																											/* Default stack size*/
-	  m_fileDir(fileDir))
+	  m_fileDir(fileDir)
 {
 	const char *functionName = "FileContentsServerDriver";
 	createParam(P_fileNameString, asynParamOctet, &P_fileName);
@@ -189,7 +189,6 @@ void FileContentsServerDriver::readFile()
 	std::fstream f;
 	std::string line, key, value;
 	m_linesArray.clear();
-	int param;
 	char fileName[256];
 	getStringParam(P_fileName, sizeof(fileName), fileName);
 	std::string m_fullFileName = m_fileDir + fileName;

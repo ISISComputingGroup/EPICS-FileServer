@@ -6,7 +6,7 @@
 class FileContentsServerDriver : public asynPortDriver
 {
 public:
-	FileContentsServerDriver(const char *portName, const char *fileDir, int fileType);
+	FileContentsServerDriver(const char *portName, const char *fileDir);
 
 	// These are the methods that we override from asynPortDriver
 	virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t maxChars, size_t *nActual);
