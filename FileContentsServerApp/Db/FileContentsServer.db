@@ -35,11 +35,13 @@ record(bo, "$(P)SAVE_FILE")
     field(ASG, "MANAGER")  
 }
 
-record(stringin, "$(P)FILE_DIR") 
+record(waveform, "$(P)FILE_DIR") 
 {
     field(DTYP, "asynOctetRead") 
+    field(FTVL, "CHAR")
     field(INP,  "@asyn($(PORT),0,0)FILE_DIR") 
     field(SCAN, "I/O Intr")
+    field(NELM, "512")
 }
 
 record(waveform, "$(P)LOG") 
