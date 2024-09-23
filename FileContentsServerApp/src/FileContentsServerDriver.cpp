@@ -12,6 +12,7 @@
 #include <fstream>
 #include <sys/timeb.h>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include <epicsTypes.h>
 #include <epicsTime.h>
@@ -74,7 +75,9 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 // Override the method to handle writes to parameters
 asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
-	if (pasynUser->reason == P_saveFile)
+	int hasChanged;
+	getIntegerParam(P_unsavedChanges, &hasChanged);
+	if (pasynUser->reason == P_saveFile && hasChanged == 1)
 	{
 		if (value == 1)
 		{
@@ -86,20 +89,16 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 
 			// Get the value of the parameter we just set
 			getStringParam(P_linesArray, sizeof(buffer), buffer);
-			std::cout << "Value of P_linesArray after setStringParam: " << buffer << std::endl;
-			// replace newlines with ""
-			std::string buffer_str = buffer;
-			// boost::replace_all(buffer_str, "\n", "");
 
 			char fileName[512];
 			getStringParam(P_fileName, sizeof(fileName), fileName);
 			// join the file name with the file directory
 			std::string m_fullFileName = m_fileDir + fileName;
 			// Write the contents of buffer to a file
-			std::ofstream outfile(m_fullFileName, std::ios::out | std::ios::trunc); // Open in  write mode
+			std::ofstream outfile(m_fullFileName, std::ios::trunc | std::ios::binary); // Open in  write mode
 			if (outfile.is_open())
 			{
-				outfile << buffer_str << std::endl;
+				outfile << buffer;
 				outfile.close();
 				std::cout << "Contents written to file successfully." << std::endl;
 				logMessage("File saved successfully");
@@ -140,22 +139,7 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 void FileContentsServerDriver::updateLinesArray()
 {
 	std::string concatenatedLines;
-	int i = 0;
-	for (const auto &line : m_linesArray)
-	{
-		if (i == m_linesArray.size())
-		{
-			concatenatedLines += line;
-		}
-		else
-		{
-			concatenatedLines += line + "\n";
-		}
-		i++;
-	}
-
-	boost::replace_all(concatenatedLines, "\r", "");
-
+	concatenatedLines = boost::algorithm::join(m_linesArray, "\n");
 	setStringParam(P_linesArray, concatenatedLines.c_str());
 	m_original_lines_array = concatenatedLines;
 
@@ -216,7 +200,7 @@ void FileContentsServerDriver::readFile()
 		int i = 0;
 		while (f.good())
 		{
-			std::getline(f, line);
+			std::getline(f, line, '\n');
 			m_linesArray.push_back(line);
 			i++;
 		}
