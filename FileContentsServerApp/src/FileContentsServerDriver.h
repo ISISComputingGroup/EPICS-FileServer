@@ -14,7 +14,7 @@ public:
 
 private:
 	int P_fileName;
-	int P_linesArray;
+	int P_fileContents;
 	int P_saveFile;
 	int P_fileDir;
 	int P_reset;
@@ -28,12 +28,11 @@ private:
 	std::string m_original_lines_array;
 
 	void readFile();
-	void updateLinesArray(const std::vector<std::string>& linesArray);
 	void logMessage(const std::string& message);
 };
 
 #define P_fileNameString "FILE_NAME"
-#define P_linesArrayString "LINES_ARRAY"
+#define P_fileContentsString "LINES_ARRAY"
 #define P_saveFileString "SAVE_FILE"
 #define P_fileDirString "FILE_DIR"
 #define P_logString "LOG"
@@ -42,3 +41,4 @@ private:
 #define P_unsavedChangesString "UNSAVED_CHANGES"
 
 #endif /* FILECONTENTSSERVERDRIVER_H */
+	

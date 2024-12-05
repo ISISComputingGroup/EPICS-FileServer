@@ -53,7 +53,7 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 {
 	const char *functionName = "FileContentsServerDriver";
 	createParam(P_fileNameString, asynParamOctet, &P_fileName);
-	createParam(P_linesArrayString, asynParamOctet, &P_linesArray);
+	createParam(P_fileContentsString, asynParamOctet, &P_fileContents);
 	createParam(P_saveFileString, asynParamInt32, &P_saveFile);
 	createParam(P_resetString, asynParamInt32, &P_reset);
 	createParam(P_fileDirString, asynParamOctet, &P_fileDir);
@@ -70,7 +70,7 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	setIntegerParam(P_newFileWarning, defaultNewFileWarning);
 	const int defaultUnsavedChanges = 0;
 	setIntegerParam(P_unsavedChanges, defaultUnsavedChanges);
-	setStringParam(P_linesArray, "");
+	setStringParam(P_fileContents, "");
 	setStringParam(P_log, "");
 	logMessage("Editor initialized");
 	callParamCallbacks();
@@ -91,7 +91,7 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 			char buffer[5000]; // Assuming the response will fit within 256 characters
 
 			// Get the value of the parameter we just set
-			getStringParam(P_linesArray, sizeof(buffer), buffer);
+			getStringParam(P_fileContents, sizeof(buffer), buffer);
 
 			char fileName[512];
 			getStringParam(P_fileName, sizeof(fileName), fileName);
@@ -132,7 +132,7 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 		if (value == 1)
 		{
 			std::cout << "Resetting" << std::endl;
-			setStringParam(P_linesArray, m_original_lines_array.c_str());
+			setStringParam(P_fileContents, m_original_lines_array.c_str());
 			logMessage("Reset successful.");
 			setIntegerParam(P_reset, 0);
 			setIntegerParam(P_unsavedChanges, 0);
@@ -144,11 +144,6 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 	{
 		return asynPortDriver::writeInt32(pasynUser, value);
 	}
-}
-
-void FileContentsServerDriver::updateLinesArray(const std::vector<std::string>& linesArray)
-{
-	
 }
 
 void FileContentsServerDriver::logMessage(const std::string& message)
@@ -174,8 +169,6 @@ void FileContentsServerDriver::readFile()
 {
 	std::cout << "Calling readFile" << std::endl;
 	std::fstream f;
-	std::string line;
-	std::vector<std::string> linesArray;
 	char fileName[256];
 	getStringParam(P_fileName, sizeof(fileName), fileName);
 	std::string m_fullFileName = m_fileDir + "/" + fileName;
@@ -191,7 +184,7 @@ void FileContentsServerDriver::readFile()
 				logMessage("File not found");
 				std::cout << "File not found" << std::endl;
 				setIntegerParam(P_newFileWarning, 1);
-				setStringParam(P_linesArray, "");
+				setStringParam(P_fileContents, "");
 			}
 			else // Other errors, e.g., permission denied
 			{
@@ -205,7 +198,7 @@ void FileContentsServerDriver::readFile()
 
 		std::stringstream buffer;
 		buffer << f.rdbuf();
-		setStringParam(P_linesArray, buffer.str().c_str());
+		setStringParam(P_fileContents, buffer.str().c_str());
 		m_original_lines_array = buffer.str().c_str();
 		setIntegerParam(P_unsavedChanges, 0);
 
@@ -228,10 +221,10 @@ asynStatus FileContentsServerDriver::writeOctet(asynUser *pasynUser, const char 
 	const char *paramName = NULL;
 	getParamName(function, &paramName);
 	std::cout << "writeOctet " << paramName << std::endl;
-	if (function == P_linesArray)
+	if (function == P_fileContents)
 	{
 
-		setStringParam(P_linesArray, value);
+		setStringParam(P_fileContents, value);
 		if (m_original_lines_array != value)
 		{
 			setIntegerParam(P_unsavedChanges, 1);
