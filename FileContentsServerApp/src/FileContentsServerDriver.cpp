@@ -13,6 +13,7 @@
 #include <sys/timeb.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <sstream>
 
 #include <epicsTypes.h>
 #include <epicsTime.h>
@@ -147,14 +148,7 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 
 void FileContentsServerDriver::updateLinesArray(const std::vector<std::string>& linesArray)
 {
-	std::string concatenatedLines = boost::algorithm::join(linesArray, "\n");
-	setStringParam(P_linesArray, concatenatedLines.c_str());
-	m_original_lines_array = concatenatedLines;
-    setIntegerParam(P_unsavedChanges, 0);
-
-	logMessage("File read successfully");
-
-	callParamCallbacks();
+	
 }
 
 void FileContentsServerDriver::logMessage(const std::string& message)
@@ -208,14 +202,16 @@ void FileContentsServerDriver::readFile()
 		}
 		setIntegerParam(P_newFileWarning, 0);
 		int i = 0;
-		while (f.good())
-		{
-			std::getline(f, line, '\n');
-			linesArray.push_back(line);
-			i++;
-		}
-		std::cout << "FileContentsServerDriver: Read " << i << " lines " << std::endl;
-		updateLinesArray(linesArray); // Update the PV with the new content of linesArray
+
+		std::stringstream buffer;
+		buffer << f.rdbuf();
+		setStringParam(P_linesArray, buffer.str().c_str());
+		m_original_lines_array = buffer.str().c_str();
+		setIntegerParam(P_unsavedChanges, 0);
+
+		logMessage("File read successfully");
+
+		callParamCallbacks();
 	}
 	catch (const std::exception &e)
 	{
