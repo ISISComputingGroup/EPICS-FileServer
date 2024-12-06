@@ -5,7 +5,7 @@ record(waveform, "$(P)LINES_ARRAY:SP")
     field(FTVL, "CHAR")
     field(NELM, "5000")
     info(asyn:READBACK, "1")
-    }
+}
 
 
 record(stringin, "$(P)FILE_NAME") 
@@ -29,10 +29,10 @@ record(bo, "$(P)SAVE_FILE")
     field(DTYP, "asynInt32")                   
     field(OUT,  "@asyn($(PORT),0,0)SAVE_FILE")   
     field(VAL, "0")                           
-    field(RVAL, "0")
     field(ZNAM, "Idle")                    
     field(ONAM, "Saving file")   
-    field(ASG, "MANAGER")  
+    field(ASG, "MANAGER")
+    field(UDFS, "NO_ALARM")
 }
 
 record(waveform, "$(P)FILE_DIR") 
@@ -59,16 +59,15 @@ record(bo, "$(P)RESET")
     field(DTYP, "asynInt32")                   
     field(OUT,  "@asyn($(PORT),0,0)RESET")   
     field(VAL, "0")                           
-    field(RVAL, "0")                                            
     field(ZNAM, "Idle")                    
     field(ONAM, "Resetting")   
+    field(UDFS, "NO_ALARM")
 }
 
 record(bi, "$(P)NEW_FILE_WARNING"){
     field(DTYP, "asynInt32")                   
     field(INP,  "@asyn($(PORT),0,0)NEW_FILE_WARNING")   
     field(VAL, "0")                           
-    field(RVAL, "0")                                          
     field(ZNAM, "No")                    
     field(ONAM, "Yes")   
     field(SCAN, "I/O Intr")
@@ -78,7 +77,6 @@ record(bi, "$(P)UNSAVED_CHANGES"){
     field(DTYP, "asynInt32")                   
     field(INP,  "@asyn($(PORT),0,0)UNSAVED_CHANGES")   
     field(VAL, "0")                           
-    field(RVAL, "0")                                            
     field(ZNAM, "No")                    
     field(ONAM, "Yes")   
     field(SCAN, "I/O Intr")
