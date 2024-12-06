@@ -132,7 +132,7 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 		if (value == 1)
 		{
 			std::cout << "Resetting" << std::endl;
-			setStringParam(P_fileContents, m_original_lines_array.c_str());
+			setStringParam(P_fileContents, m_original_lines_array);
 			logMessage("Reset successful.");
 			setIntegerParam(P_reset, 0);
 			setIntegerParam(P_unsavedChanges, 0);
@@ -161,7 +161,7 @@ void FileContentsServerDriver::logMessage(const std::string& message)
 	// Create the log message
 	std::string log_message = std::string(time_str) + ": " + message;
 
-	setStringParam(P_log, log_message.c_str());
+	setStringParam(P_log, log_message);
 	callParamCallbacks();
 }
 
@@ -175,7 +175,7 @@ void FileContentsServerDriver::readFile()
 	std::cout << "FileContentsServerDriver: Reading file " << m_fullFileName << std::endl;
 	try
 	{
-		f.open(m_fullFileName.c_str(), std::ios::in);
+		f.open(m_fullFileName, std::ios::in);
 		if (!f.is_open())
 		{
 			m_original_lines_array = "";
@@ -198,8 +198,8 @@ void FileContentsServerDriver::readFile()
 
 		std::stringstream buffer;
 		buffer << f.rdbuf();
-		setStringParam(P_fileContents, buffer.str().c_str());
-		m_original_lines_array = buffer.str().c_str();
+		setStringParam(P_fileContents, buffer.str());
+		m_original_lines_array = buffer.str();
 		setIntegerParam(P_unsavedChanges, 0);
 
 		logMessage("File read successfully");
