@@ -121,6 +121,7 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 	        catch (const std::exception &e)
 	        {
 		        std::cerr << "Exception caught: " << e.what() << std::endl;
+                logMessage(e.what());
                 return asynError;
 	        }
 			callParamCallbacks();
@@ -179,19 +180,18 @@ void FileContentsServerDriver::readFile()
 		if (!f.is_open())
 		{
 			m_original_lines_array = "";
+			setStringParam(P_fileContents, "");
 			if (errno == ENOENT) // File not found
 			{
-				logMessage("File not found");
-				std::cout << "File not found" << std::endl;
+				std::cout << "File not found: " + m_fullFileName << std::endl;
 				setIntegerParam(P_newFileWarning, 1);
-				setStringParam(P_fileContents, "");
+			    throw std::runtime_error("File not found");
 			}
 			else // Other errors, e.g., permission denied
 			{
-				logMessage("Unable to open file: " + std::string(strerror(errno)));
+			    std::cerr << "Unable to open file: " + m_fullFileName << std::endl;
+			    throw std::runtime_error(std::string("Unable to open file: ") + std::string(strerror(errno)));
 			}
-
-			throw std::runtime_error("Unable to open file: " + m_fullFileName);
 		}
 		setIntegerParam(P_newFileWarning, 0);
 		int i = 0;
@@ -209,6 +209,7 @@ void FileContentsServerDriver::readFile()
 	catch (const std::exception &e)
 	{
 		std::cerr << "Exception caught: " << e.what() << std::endl;
+        logMessage(e.what());
 	}
 
 	callParamCallbacks();
