@@ -8,20 +8,20 @@ record(waveform, "$(P)LINES_ARRAY:SP")
 }
 
 
-record(stringin, "$(P)FILE_NAME") 
+record(stringin , "$(P)INPUT_FILE")
 {
     field(DTYP, "asynOctetRead") 
-    field(INP,  "@asyn($(PORT),0,0)FILE_NAME") 
+    field(INP,  "@asyn($(PORT),0,0)INPUT_FILE") 
     field(SCAN, "I/O Intr")
 }
 
-record(stringout, "$(P)FILE_NAME:SP")
+record(stringin, "$(P)OUTPUT_FILE") 
 {
-    field(DTYP, "asynOctetWrite") 
-    field(OUT,  "@asyn($(PORT),0,0)FILE_NAME") 
-    info(autosaveFields, "VAL")
-    field(PINI, "YES")
+    field(DTYP, "asynOctetRead") 
+    field(INP,  "@asyn($(PORT),0,0)OUTPUT_FILE") 
+    field(SCAN, "I/O Intr")
 }
+
 
 record(bo, "$(P)SAVE_FILE")
 {
@@ -62,15 +62,6 @@ record(bo, "$(P)RESET")
     field(ZNAM, "Idle")                    
     field(ONAM, "Resetting")   
     field(UDFS, "NO_ALARM")
-}
-
-record(bi, "$(P)NEW_FILE_WARNING"){
-    field(DTYP, "asynInt32")                   
-    field(INP,  "@asyn($(PORT),0,0)NEW_FILE_WARNING")   
-    field(VAL, "0")                           
-    field(ZNAM, "No")                    
-    field(ONAM, "Yes")   
-    field(SCAN, "I/O Intr")
 }
 
 record(bi, "$(P)UNSAVED_CHANGES"){

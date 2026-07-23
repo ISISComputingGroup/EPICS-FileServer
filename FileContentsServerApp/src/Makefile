@@ -7,6 +7,7 @@ include $(TOP)/configure/CONFIG
 
 USR_INCLUDES += -I"$(TOP)/../../libraries/boost/include"
 #USR_CXXFLAGS += /EHa /DNOMINMAX
+USR_CXXFLAGS += /std:c++20
 
 LIBRARY_IOC += FileContentsServer
 FileContentsServer_SRCS += FileContentsServerDriver.cpp

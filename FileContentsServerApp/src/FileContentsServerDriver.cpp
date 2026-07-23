@@ -5,14 +5,13 @@
 #include <math.h>
 #include <exception>
 #include <iostream>
+#include <format>
 #include <map>
 #include <list>
 #include <vector>
 #include <iomanip>
 #include <fstream>
 #include <sys/timeb.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/join.hpp>
 #include <sstream>
 
 #include <epicsTypes.h>
@@ -40,9 +39,9 @@
 
 static const char *driverName = "FileContentsServerDriver";
 
-FileContentsServerDriver::FileContentsServerDriver(const char *portName, const char *fileDir)
+FileContentsServerDriver::FileContentsServerDriver(const char *portName, const char *fileDir, const char *inputFile, const char *outputFile)
 	: asynPortDriver(portName,
-					 0, /* maxAddr */
+					 0,																												/* maxAddr */
 					 asynInt32Mask | asynInt32ArrayMask | asynFloat64Mask | asynFloat64ArrayMask | asynOctetMask | asynDrvUserMask, /* Interface mask */
 					 asynInt32Mask | asynInt32ArrayMask | asynFloat64Mask | asynFloat64ArrayMask | asynOctetMask,					/* Interrupt mask */
 					 ASYN_CANBLOCK,																									/* asynFlags.  This driver can block but it is not multi-device */
@@ -52,7 +51,9 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	  m_fileDir(fileDir)
 {
 	const char *functionName = "FileContentsServerDriver";
-	createParam(P_fileNameString, asynParamOctet, &P_fileName);
+
+	createParam(P_inputFileNameString, asynParamOctet, &P_inputFileName);
+	createParam(P_outputFileNameString, asynParamOctet, &P_outputFileName);
 	createParam(P_fileContentsString, asynParamOctet, &P_fileContents);
 	createParam(P_saveFileString, asynParamInt32, &P_saveFile);
 	createParam(P_resetString, asynParamInt32, &P_reset);
@@ -62,6 +63,23 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	createParam(P_unsavedChangesString, asynParamInt32, &P_unsavedChanges);
 
 	setStringParam(P_fileDir, fileDir);
+	setStringParam(P_inputFileName, inputFile);
+
+	// Read the original contents in first.
+	readFile();
+
+	if (outputFile == "")
+	{
+		// If the output file is not specified, default to saving output to the input file.
+		setStringParam(P_outputFileName, inputFile);
+	}
+	else
+	{
+		setStringParam(P_outputFileName, outputFile);
+		// Save the file so that the output file has the contents of the input file initially.
+		saveFile();
+	}
+
 	const int defaultSaveFile = 0;
 	setIntegerParam(P_saveFile, defaultSaveFile);
 	const int defaultReset = 0;
@@ -70,10 +88,50 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	setIntegerParam(P_newFileWarning, defaultNewFileWarning);
 	const int defaultUnsavedChanges = 0;
 	setIntegerParam(P_unsavedChanges, defaultUnsavedChanges);
-	setStringParam(P_fileContents, "");
 	setStringParam(P_log, "");
 	logMessage("Editor initialized");
 	callParamCallbacks();
+}
+
+asynStatus FileContentsServerDriver::saveFile()
+{
+	logMessage("Triggering save");
+
+	char buffer[5000]; // Assuming the response will fit within 256 characters
+
+	// Get the value of the parameter we just set
+	getStringParam(P_fileContents, sizeof(buffer), buffer);
+
+	char fileName[512];
+	getStringParam(P_outputFileName, sizeof(fileName), fileName);
+	// join the file name with the file directory
+	std::string fullFileName = m_fileDir + "/" + fileName;
+	// Write the contents of buffer to a file
+	try
+	{
+		std::ofstream outfile(fullFileName, std::ios::trunc | std::ios::binary); // Open in  write mode
+		if (outfile.is_open())
+		{
+			outfile << buffer;
+			outfile.close();
+			logMessage("File saved successfully");
+			setIntegerParam(P_saveFile, 0);
+			setIntegerParam(P_newFileWarning, 0);
+			setIntegerParam(P_unsavedChanges, 0);
+		}
+		else
+		{
+			logMessage(std::format("Failed to open file ({}) for writing", fullFileName));
+			return asynError;
+		}
+	}
+	catch (const std::exception &e)
+	{
+		logMessage(e.what());
+		return asynError;
+	}
+	callParamCallbacks();
+	return asynSuccess;
 }
 
 // Override the method to handle writes to parameters
@@ -85,46 +143,7 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 	{
 		if (value == 1 && hasChanged == 1)
 		{
-			std::cout << "Triggering save" << std::endl;
-			std::cout << "Value received by asyn: " << value << std::endl;
-
-			char buffer[5000]; // Assuming the response will fit within 256 characters
-
-			// Get the value of the parameter we just set
-			getStringParam(P_fileContents, sizeof(buffer), buffer);
-
-			char fileName[512];
-			getStringParam(P_fileName, sizeof(fileName), fileName);
-			// join the file name with the file directory
-			std::string m_fullFileName = m_fileDir + "/" + fileName;
-			// Write the contents of buffer to a file
-            try
-            {
-                std::ofstream outfile(m_fullFileName, std::ios::trunc | std::ios::binary); // Open in  write mode
-                if (outfile.is_open())
-                {
-                    outfile << buffer;
-                    outfile.close();
-                    std::cout << "Contents written to file successfully." << std::endl;
-                    logMessage("File saved successfully");
-                    setIntegerParam(P_saveFile, 0);
-                    setIntegerParam(P_newFileWarning, 0);
-                    setIntegerParam(P_unsavedChanges, 0);
-                }
-                else
-                {
-                    std::cerr << "Failed to open file for writing." << std::endl;
-                    logMessage("Failed to open file for writing");
-                    return asynError;
-                }
-            }
-	        catch (const std::exception &e)
-	        {
-		        std::cerr << "Exception caught: " << e.what() << std::endl;
-                logMessage(e.what());
-                return asynError;
-	        }
-			callParamCallbacks();
+			return saveFile();
 		}
 		return asynSuccess;
 	}
@@ -132,8 +151,9 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 	{
 		if (value == 1)
 		{
-			std::cout << "Resetting" << std::endl;
+			logMessage("Reloading from disk");
 			setStringParam(P_fileContents, m_original_lines_array);
+			saveFile();
 			logMessage("Reset successful.");
 			setIntegerParam(P_reset, 0);
 			setIntegerParam(P_unsavedChanges, 0);
@@ -147,7 +167,7 @@ asynStatus FileContentsServerDriver::writeInt32(asynUser *pasynUser, epicsInt32 
 	}
 }
 
-void FileContentsServerDriver::logMessage(const std::string& message)
+void FileContentsServerDriver::logMessage(const std::string &message)
 {
 	// add the time to the front of the log message
 	// current time
@@ -162,6 +182,7 @@ void FileContentsServerDriver::logMessage(const std::string& message)
 	// Create the log message
 	std::string log_message = std::string(time_str) + ": " + message;
 
+	std::cout << log_message << std::endl;
 	setStringParam(P_log, log_message);
 	callParamCallbacks();
 }
@@ -171,26 +192,26 @@ void FileContentsServerDriver::readFile()
 	std::cout << "Calling readFile" << std::endl;
 	std::fstream f;
 	char fileName[256];
-	getStringParam(P_fileName, sizeof(fileName), fileName);
-	std::string m_fullFileName = m_fileDir + "/" + fileName;
-	std::cout << "FileContentsServerDriver: Reading file " << m_fullFileName << std::endl;
+	getStringParam(P_inputFileName, sizeof(fileName), fileName);
+	std::string fullFileName = m_fileDir + "/" + fileName;
+
+	logMessage(std::format("Reading file {}", fullFileName));
 	try
 	{
-		f.open(m_fullFileName, std::ios::in);
+		f.open(fullFileName, std::ios::in);
 		if (!f.is_open())
 		{
 			m_original_lines_array = "";
 			setStringParam(P_fileContents, "");
 			if (errno == ENOENT) // File not found
 			{
-				std::cout << "File not found: " + m_fullFileName << std::endl;
-				setIntegerParam(P_newFileWarning, 1);
-			    throw std::runtime_error("File not found");
+				logMessage(std::format("File not found: {}", fullFileName));
+				throw std::runtime_error("File not found");
 			}
 			else // Other errors, e.g., permission denied
 			{
-			    std::cerr << "Unable to open file: " + m_fullFileName << std::endl;
-			    throw std::runtime_error(std::string("Unable to open file: ") + std::string(strerror(errno)));
+				logMessage(std::format("Unable to open file: {}, error {}", fullFileName, std::string(strerror(errno))));
+				throw std::runtime_error(std::string("Unable to open file: ") + std::string(strerror(errno)));
 			}
 		}
 		setIntegerParam(P_newFileWarning, 0);
@@ -209,7 +230,7 @@ void FileContentsServerDriver::readFile()
 	catch (const std::exception &e)
 	{
 		std::cerr << "Exception caught: " << e.what() << std::endl;
-        logMessage(e.what());
+		logMessage(e.what());
 	}
 
 	callParamCallbacks();
@@ -235,12 +256,6 @@ asynStatus FileContentsServerDriver::writeOctet(asynUser *pasynUser, const char 
 			setIntegerParam(P_unsavedChanges, 0);
 		}
 	}
-	else if (function == P_fileName)
-	{
-		std::cout << "Setting file name to " << value << std::endl;
-		setStringParam(P_fileName, value);
-		readFile();
-	}
 	else
 	{
 		return asynPortDriver::writeOctet(pasynUser, value, maxChars, nActual);
@@ -259,11 +274,11 @@ extern "C"
 
 	/// \param[in] portName @copydoc initArg0
 	/// \param[in] fileDir @copydoc initArg1
-	int FileContentsServerConfigure(const char *portName, const char *fileDir)
+	int FileContentsServerConfigure(const char *portName, const char *fileDir, const char *inputFile, const char *outputFile)
 	{
 		try
 		{
-			FileContentsServerDriver *driver = new FileContentsServerDriver(portName, fileDir);
+			FileContentsServerDriver *driver = new FileContentsServerDriver(portName, fileDir, inputFile, outputFile);
 			if (driver == NULL)
 			{
 				errlogSevPrintf(errlogMajor, "FileContentsServerConfigure failed (NULL)\n");
@@ -283,17 +298,21 @@ extern "C"
 
 	// EPICS iocsh shell commands
 
-	static const iocshArg initArg0 = {"portName", iocshArgString}; ///< The name of the asyn driver port we will create
-	static const iocshArg initArg1 = {"fileDir", iocshArgString};  ///< file name
+	static const iocshArg initArg0 = {"portName", iocshArgString};	 ///< The name of the asyn driver port we will create
+	static const iocshArg initArg1 = {"fileDir", iocshArgString};	 ///< The directory to open/save files into
+	static const iocshArg initArg2 = {"inputFile", iocshArgString};	 ///< input file name to read and initially serve contents of
+	static const iocshArg initArg3 = {"outputFile", iocshArgString}; ///< file name to save output to when a user hits save. If not set this defaults to inputFile.
 
 	static const iocshArg *const initArgs[] = {&initArg0,
-											   &initArg1};
+											   &initArg1,
+											   &initArg2,
+											   &initArg3};
 
 	static const iocshFuncDef initFuncDef = {"FileContentsServerConfigure", sizeof(initArgs) / sizeof(iocshArg *), initArgs};
 
 	static void initCallFunc(const iocshArgBuf *args)
 	{
-		FileContentsServerConfigure(args[0].sval, args[1].sval);
+		FileContentsServerConfigure(args[0].sval, args[1].sval, args[2].sval, args[3].sval);
 	}
 
 	static void FileContentsServerRegister(void)
