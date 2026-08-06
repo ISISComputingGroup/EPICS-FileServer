@@ -97,13 +97,13 @@ asynStatus FileContentsServerDriver::saveFile()
 {
 	logMessage("Triggering save");
 
-	char buffer[5000]; // Assuming the response will fit within 256 characters
+	std::string buffer; // Assuming the response will fit within 256 characters
 
 	// Get the value of the parameter we just set
-	getStringParam(P_fileContents, sizeof(buffer), buffer);
+	getStringParam(P_fileContents, buffer);
 
-	char fileName[512];
-	getStringParam(P_outputFileName, sizeof(fileName), fileName);
+	std::string fileName;
+	getStringParam(P_outputFileName, fileName);
 	// join the file name with the file directory
 	std::string fullFileName = m_fileDir + "/" + fileName;
 	// Write the contents of buffer to a file
@@ -191,8 +191,8 @@ void FileContentsServerDriver::readFile()
 {
 	std::cout << "Calling readFile" << std::endl;
 	std::fstream f;
-	char fileName[256];
-	getStringParam(P_inputFileName, sizeof(fileName), fileName);
+	std::string fileName;
+	getStringParam(P_inputFileName, fileName);
 	std::string fullFileName = m_fileDir + "/" + fileName;
 
 	logMessage(std::format("Reading file {}", fullFileName));
