@@ -68,16 +68,16 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	// Read the original contents in first.
 	readFile();
 
-	if (outputFile == NULL)
-	{
-		// If the output file is not specified, default to saving output to the input file.
-		setStringParam(P_outputFileName, inputFile);
-	}
-	else
+	if (outputFile && *outputFile)
 	{
 		setStringParam(P_outputFileName, outputFile);
 		// Save the file so that the output file has the contents of the input file initially.
 		saveFile();
+	}
+    else
+	{
+		// If the output file is not specified, default to saving output to the input file.
+		setStringParam(P_outputFileName, inputFile);
 	}
 
 	const int defaultSaveFile = 0;
