@@ -68,7 +68,7 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	// Read the original contents in first.
 	readFile();
 
-	if (outputFile == "")
+	if (outputFile == NULL)
 	{
 		// If the output file is not specified, default to saving output to the input file.
 		setStringParam(P_outputFileName, inputFile);
@@ -190,7 +190,7 @@ void FileContentsServerDriver::logMessage(const std::string &message)
 void FileContentsServerDriver::readFile()
 {
 	std::cout << "Calling readFile" << std::endl;
-	std::fstream f;
+	std::ifstream f;
 	std::string fileName;
 	getStringParam(P_inputFileName, fileName);
 	std::string fullFileName = m_fileDir + "/" + fileName;
@@ -198,7 +198,7 @@ void FileContentsServerDriver::readFile()
 	logMessage(std::format("Reading file {}", fullFileName));
 	try
 	{
-		f.open(fullFileName, std::ios::in);
+		f.open(fullFileName, std::ios::binary);
 		if (!f.is_open())
 		{
 			m_original_lines_array = "";
