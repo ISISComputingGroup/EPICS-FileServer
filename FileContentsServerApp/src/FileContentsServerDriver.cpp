@@ -59,7 +59,6 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	createParam(P_resetString, asynParamInt32, &P_reset);
 	createParam(P_fileDirString, asynParamOctet, &P_fileDir);
 	createParam(P_logString, asynParamOctet, &P_log);
-	createParam(P_newFileWarningString, asynParamInt32, &P_newFileWarning);
 	createParam(P_unsavedChangesString, asynParamInt32, &P_unsavedChanges);
 
 	setStringParam(P_fileDir, fileDir);
@@ -84,8 +83,6 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	setIntegerParam(P_saveFile, defaultSaveFile);
 	const int defaultReset = 0;
 	setIntegerParam(P_reset, defaultReset);
-	const int defaultNewFileWarning = 0;
-	setIntegerParam(P_newFileWarning, defaultNewFileWarning);
 	const int defaultUnsavedChanges = 0;
 	setIntegerParam(P_unsavedChanges, defaultUnsavedChanges);
 	setStringParam(P_log, "");
@@ -116,7 +113,6 @@ asynStatus FileContentsServerDriver::saveFile()
 			outfile.close();
 			logMessage("File saved successfully");
 			setIntegerParam(P_saveFile, 0);
-			setIntegerParam(P_newFileWarning, 0);
 			setIntegerParam(P_unsavedChanges, 0);
 		}
 		else
@@ -214,7 +210,6 @@ void FileContentsServerDriver::readFile()
 				throw std::runtime_error(std::string("Unable to open file: ") + std::string(strerror(errno)));
 			}
 		}
-		setIntegerParam(P_newFileWarning, 0);
 		int i = 0;
 
 		std::stringstream buffer;

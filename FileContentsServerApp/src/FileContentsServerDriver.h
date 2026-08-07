@@ -20,7 +20,6 @@ private:
 	int P_fileDir;
 	int P_reset;
 	int P_log;
-	int P_newFileWarning;
 	int P_unsavedChanges;
 
 	std::string m_fileDir;
@@ -38,7 +37,6 @@ private:
 #define P_fileDirString "FILE_DIR"
 #define P_logString "LOG"
 #define P_resetString "RESET"
-#define P_newFileWarningString "NEW_FILE_WARNING"
 #define P_unsavedChangesString "UNSAVED_CHANGES"
 
 #endif /* FILECONTENTSSERVERDRIVER_H */
