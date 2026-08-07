@@ -97,7 +97,7 @@ asynStatus FileContentsServerDriver::saveFile()
 {
 	logMessage("Triggering save");
 
-	std::string buffer; // Assuming the response will fit within 256 characters
+	std::string buffer;
 
 	// Get the value of the parameter we just set
 	getStringParam(P_fileContents, buffer);
