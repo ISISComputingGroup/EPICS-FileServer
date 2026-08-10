@@ -31,7 +31,6 @@ record(bo, "$(P)SAVE_FILE")
     field(VAL, "0")                           
     field(ZNAM, "Idle")                    
     field(ONAM, "Saving file")   
-    field(ASG, "MANAGER")
     field(UDFS, "NO_ALARM")
 }
 
