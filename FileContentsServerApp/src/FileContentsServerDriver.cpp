@@ -5,7 +5,6 @@
 #include <math.h>
 #include <exception>
 #include <iostream>
-#include <format>
 #include <map>
 #include <list>
 #include <vector>
@@ -117,7 +116,7 @@ asynStatus FileContentsServerDriver::saveFile()
 		}
 		else
 		{
-			logMessage(std::format("Failed to open file ({}) for writing", fullFileName));
+			logMessage(std::string("Failed to open file (") + fullFileName + ") for writing");
 			return asynError;
 		}
 	}
@@ -191,7 +190,7 @@ void FileContentsServerDriver::readFile()
 	getStringParam(P_inputFileName, fileName);
 	std::string fullFileName = m_fileDir + "/" + fileName;
 
-	logMessage(std::format("Reading file {}", fullFileName));
+	logMessage(std::string("Reading file ") + fullFileName);
 	try
 	{
 		f.open(fullFileName, std::ios::binary);
@@ -201,12 +200,12 @@ void FileContentsServerDriver::readFile()
 			setStringParam(P_fileContents, "");
 			if (errno == ENOENT) // File not found
 			{
-				logMessage(std::format("File not found: {}", fullFileName));
+				logMessage(std::string("File not found: ") + fullFileName);
 				throw std::runtime_error("File not found");
 			}
 			else // Other errors, e.g., permission denied
 			{
-				logMessage(std::format("Unable to open file: {}, error {}", fullFileName, std::string(strerror(errno))));
+				logMessage(std::string("Unable to open file: ") + fullFileName + ", error " + std::string(strerror(errno)));
 				throw std::runtime_error(std::string("Unable to open file: ") + std::string(strerror(errno)));
 			}
 		}
