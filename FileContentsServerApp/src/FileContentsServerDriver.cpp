@@ -105,7 +105,7 @@ asynStatus FileContentsServerDriver::saveFile()
 	// Write the contents of buffer to a file
 	try
 	{
-		std::ofstream outfile(fullFileName, std::ios::trunc | std::ios::binary); // Open in  write mode
+		std::ofstream outfile(fullFileName, std::ios::trunc); // Open in  write mode
 		if (outfile.is_open())
 		{
 			outfile << buffer;
@@ -193,7 +193,7 @@ void FileContentsServerDriver::readFile()
 	logMessage(std::string("Reading file ") + fullFileName);
 	try
 	{
-		f.open(fullFileName, std::ios::binary);
+		f.open(fullFileName);
 		if (!f.is_open())
 		{
 			m_original_lines_array = "";
