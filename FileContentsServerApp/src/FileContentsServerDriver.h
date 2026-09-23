@@ -11,6 +11,7 @@ public:
 	// These are the methods that we override from asynPortDriver
 	virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t maxChars, size_t *nActual);
 	virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
+    virtual ~FileContentsServerDriver();
 
 private:
 	int P_inputFileName;
@@ -24,6 +25,7 @@ private:
 
 	std::string m_fileDir;
 	std::string m_original_lines_array;
+    FILE* m_fileH;
 
 	void readFile();
 	asynStatus saveFile();
