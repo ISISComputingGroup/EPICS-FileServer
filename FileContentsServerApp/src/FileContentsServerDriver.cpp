@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <math.h>
+#include <io.h>
 #include <exception>
 #include <iostream>
 #include <map>
@@ -47,7 +48,7 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 					 1,																												/* Autoconnect */
 					 0,																												/* Default priority */
 					 0),																											/* Default stack size*/
-	  m_fileDir(fileDir)
+	  m_fileDir(fileDir), m_fileH(NULL)
 {
 	const char *functionName = "FileContentsServerDriver";
 
@@ -89,6 +90,13 @@ FileContentsServerDriver::FileContentsServerDriver(const char *portName, const c
 	callParamCallbacks();
 }
 
+FileContentsServerDriver::~FileContentsServerDriver()
+{
+    if (m_fileH != NULL) {
+        fclose(m_fileH);
+    }
+}
+
 asynStatus FileContentsServerDriver::saveFile()
 {
 	logMessage("Triggering save");
@@ -102,31 +110,28 @@ asynStatus FileContentsServerDriver::saveFile()
 	getStringParam(P_outputFileName, fileName);
 	// join the file name with the file directory
 	std::string fullFileName = m_fileDir + "/" + fileName;
-	// Write the contents of buffer to a file
-	try
-	{
-		std::ofstream outfile(fullFileName, std::ios::trunc | std::ios::binary); // Open in  write mode
-		if (outfile.is_open())
-		{
-			outfile << buffer;
-			outfile.close();
-			logMessage("File saved successfully");
-			setIntegerParam(P_saveFile, 0);
-			setIntegerParam(P_unsavedChanges, 0);
-		}
-		else
-		{
-			logMessage(std::string("Failed to open file (") + fullFileName + ") for writing");
-			return asynError;
-		}
-	}
-	catch (const std::exception &e)
-	{
-		logMessage(e.what());
-		return asynError;
-	}
-	callParamCallbacks();
-	return asynSuccess;
+
+    // if we haven't got the file currently open, try and open it with exclusive write access
+    if (m_fileH == NULL) {
+        if ( (m_fileH = _fsopen(fullFileName.c_str(), "wb", _SH_DENYWR)) == NULL ) {
+            logMessage(std::string("Failed to open file (") + fullFileName + ") for exclusive writing - being edited elsewhere?");
+            return asynError;
+        }
+    }
+
+    // Write the contents of buffer to a file, raise error if we can't
+    // flush after write as we keep file open
+    rewind(m_fileH); // _chfile only changes size not file position pointer, need to do both here
+    if (_chsize(_fileno(m_fileH), 0) == 0 && fwrite(buffer.c_str(), 1, buffer.size(), m_fileH) == buffer.size()) {
+        fflush(m_fileH);
+        setIntegerParam(P_saveFile, 0);
+        setIntegerParam(P_unsavedChanges, 0);
+        logMessage("File saved successfully");
+        return asynSuccess;
+    } else {
+        logMessage("File save failed");
+        return asynError;
+    }
 }
 
 // Override the method to handle writes to parameters
